@@ -758,7 +758,7 @@ mod dangerous {
         let status = unsafe { f(session_ptr, &mut num_nodes) };
         status_to_result(status).map_err(OrtError::InOutCount)?;
         assert_null_pointer(status, "SessionStatus")?;
-        (num_nodes != 0).then(|| ()).ok_or_else(|| {
+        (num_nodes != 0).then_some(()).ok_or_else(|| {
             OrtError::InOutCount(OrtApiError::Msg("No nodes in model".to_owned()))
         })?;
         Ok(num_nodes)
@@ -862,7 +862,7 @@ mod dangerous {
             unsafe { g_ort().GetTensorElementType.unwrap()(tensor_info_ptr, &mut type_sys) };
         status_to_result(status).map_err(OrtError::TensorElementType)?;
         (type_sys != sys::ONNXTensorElementDataType::ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED)
-            .then(|| ())
+            .then_some(())
             .ok_or(OrtError::UndefinedTensorElementType)?;
         // This transmute should be safe since its value is read from GetTensorElementType which we must trust.
         let io_type: TensorElementDataType = unsafe { std::mem::transmute(type_sys) };

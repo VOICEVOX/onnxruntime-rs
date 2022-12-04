@@ -97,7 +97,7 @@ where
         let status = unsafe { g_ort().IsTensor.unwrap()(self.tensor_ptr, &mut is_tensor) };
         status_to_result(status).map_err(OrtError::IsTensor)?;
         (is_tensor == 1)
-            .then(|| ())
+            .then_some(())
             .ok_or(OrtError::IsTensorCheck)?;
 
         // Get pointer to output tensor float values

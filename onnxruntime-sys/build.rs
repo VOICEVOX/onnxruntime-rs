@@ -270,7 +270,7 @@ fn extract_archive(filename: &Path, output: &Path) {
 }
 
 fn extract_tgz(filename: &Path, output: &Path) {
-    let file = fs::File::open(&filename).unwrap();
+    let file = fs::File::open(filename).unwrap();
     let buf = io::BufReader::new(file);
     let tar = flate2::read::GzDecoder::new(buf);
     let mut archive = tar::Archive::new(tar);
@@ -278,7 +278,7 @@ fn extract_tgz(filename: &Path, output: &Path) {
 }
 
 fn extract_zip(filename: &Path, outpath: &Path) {
-    let file = fs::File::open(&filename).unwrap();
+    let file = fs::File::open(filename).unwrap();
     let buf = io::BufReader::new(file);
     let mut archive = zip::ZipArchive::new(buf).unwrap();
     for i in 0..archive.len() {
@@ -294,7 +294,7 @@ fn extract_zip(filename: &Path, outpath: &Path) {
             );
             if let Some(p) = outpath.parent() {
                 if !p.exists() {
-                    fs::create_dir_all(&p).unwrap();
+                    fs::create_dir_all(p).unwrap();
                 }
             }
             let mut outfile = fs::File::create(&outpath).unwrap();
