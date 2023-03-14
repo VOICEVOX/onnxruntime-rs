@@ -483,7 +483,6 @@ impl OnnxPrebuiltArchive for Triplet {
                 "x64",
                 self.accelerator.as_onnx_str(),
             )),
-            (Os::Android, Architecture::Arm64, Accelerator::None) => Cow::from(""),
             _ => {
                 panic!(
                     "Unsupported prebuilt triplet: {:?}, {:?}, {:?}. Please use {}=system and {}=/path/to/onnxruntime",
