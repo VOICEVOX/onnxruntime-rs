@@ -69,7 +69,7 @@ fn main() {
             let include_dir = libort_install_dir.join("headers");
             let runtimes_dir = libort_install_dir
                 .join("jni")
-                .join(TRIPLET.arch.as_onnx_android_str().to_string());
+                .join(&*TRIPLET.arch.as_onnx_android_str());
             (include_dir, runtimes_dir)
         }
         _ => (
