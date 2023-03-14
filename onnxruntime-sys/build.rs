@@ -464,6 +464,7 @@ impl OnnxPrebuiltArchive for Triplet {
             }
             (Os::Windows, Architecture::X86, Accelerator::None)
             | (Os::MacOs, Architecture::X86_64, Accelerator::None)
+            | (Os::Android, Architecture::Arm64, Accelerator::None)
             | (Os::Linux, Architecture::Arm64, Accelerator::None) => Cow::from(format!(
                 "{}-{}",
                 self.os.as_onnx_str(),
