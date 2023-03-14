@@ -18,6 +18,10 @@ const ORT_VERSION: &str = "1.13.1";
 /// Base Url from which to download pre-built releases/
 const ORT_RELEASE_BASE_URL: &str = "https://github.com/microsoft/onnxruntime/releases/download";
 
+/// Base Url from which to download pre-built releases for android/
+const ORT_MAVEN_RELEASE_BASE_URL: &str =
+    "https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android";
+
 /// Environment variable selecting which strategy to use for finding the library
 /// Possibilities:
 /// * "download": Download a pre-built library from upstream. This is the default if `ORT_STRATEGY` is not set.
@@ -508,9 +512,10 @@ fn prebuilt_archive_url() -> (PathBuf, String) {
         ORT_VERSION,
         TRIPLET.os.archive_extension()
     );
-    let prebuilt_url= match TRIPLET.os {
-        Os::Android =>format!(
-            "https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android/{}/onnxruntime-android-{}.{}",
+    let prebuilt_url = match TRIPLET.os {
+        Os::Android => format!(
+            "{}/{}/onnxruntime-android-{}.{}",
+            ORT_MAVEN_RELEASE_BASE_URL,
             ORT_VERSION,
             ORT_VERSION,
             TRIPLET.os.archive_extension()
