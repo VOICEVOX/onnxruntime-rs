@@ -28,7 +28,7 @@ runs:
       if: inputs.triple == 'aarch64-linux-android'
       shell: bash
       run: |
-        echo "$ANDROID_NDK/target/android-ndk-r25c/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
+        echo "$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin" >> "$GITHUB_PATH"
         echo "AR_aarch64_linux_android=llvm-ar" >> "$GITHUB_ENV"
     - uses: actions-rs/toolchain@v1
       with:
