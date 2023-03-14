@@ -63,6 +63,7 @@ fn main() {
 fn main() {
     let libort_install_dir = prepare_libort_dir();
 
+    // FIXME: directmlとandroidで処理の表現が違うので統一する
     #[cfg(not(feature = "directml"))]
     let (include_dir, lib_dir) = match TRIPLET.os {
         Os::Android => {
