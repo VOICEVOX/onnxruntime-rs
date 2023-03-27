@@ -22,6 +22,9 @@ const ORT_RELEASE_BASE_URL: &str = "https://github.com/microsoft/onnxruntime/rel
 const ORT_MAVEN_RELEASE_BASE_URL: &str =
     "https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android";
 
+/// Base Url from which to download pre-build releases for ios/
+const ORT_COCOAPODS_RELEASE_BASE_URL: &str = "https://onnxruntimepackages.z14.web.core.windows.net";
+
 /// Environment variable selecting which strategy to use for finding the library
 /// Possibilities:
 /// * "download": Download a pre-built library from upstream. This is the default if `ORT_STRATEGY` is not set.
@@ -77,6 +80,7 @@ fn main() {
                 .join(&*TRIPLET.arch.as_onnx_android_str());
             (include_dir, runtimes_dir)
         }
+        Os::IOs => (libort_install_dir.join("Headers"), libort_install_dir),
         _ => (
             libort_install_dir.join("include"),
             libort_install_dir.join("lib"),
@@ -382,6 +386,7 @@ enum Os {
     Linux,
     MacOs,
     Android,
+    IOs,
 }
 
 impl Os {
@@ -391,6 +396,7 @@ impl Os {
             Os::Linux => "tgz",
             Os::MacOs => "tgz",
             Os::Android => "aar",
+            Os::IOs => "zip",
         }
     }
 }
@@ -404,6 +410,7 @@ impl FromStr for Os {
             "macos" => Ok(Os::MacOs),
             "linux" => Ok(Os::Linux),
             "android" => Ok(Os::Android),
+            "ios" => Ok(Os::IOs),
             _ => Err(format!("Unsupported os: {}", s)),
         }
     }
@@ -416,6 +423,7 @@ impl OnnxPrebuiltArchive for Os {
             Os::Linux => Cow::from("linux"),
             Os::MacOs => Cow::from("osx"),
             Os::Android => Cow::from("android"),
+            Os::IOs => Cow::from("ios"),
         }
     }
 }
@@ -470,7 +478,8 @@ impl OnnxPrebuiltArchive for Triplet {
                 self.os.as_onnx_str(),
                 self.arch.as_onnx_str()
             )),
-            (Os::MacOs, Architecture::Arm64, Accelerator::None) => {
+            (Os::MacOs, Architecture::Arm64, Accelerator::None)
+            | (Os::IOs, Architecture::Arm64, Accelerator::None) => {
                 Cow::from(format!("{}-{}", self.os.as_onnx_str(), "arm64"))
             }
             // onnxruntime-win-gpu-x64-1.8.1.zip
@@ -518,6 +527,12 @@ fn prebuilt_archive_url() -> (PathBuf, String) {
             "{}/{}/onnxruntime-android-{}.{}",
             ORT_MAVEN_RELEASE_BASE_URL,
             ORT_VERSION,
+            ORT_VERSION,
+            TRIPLET.os.archive_extension()
+        ),
+        Os::IOs => format!(
+            "{}/pod-archive-onnxruntime-c-{}.{}",
+            ORT_COCOAPODS_RELEASE_BASE_URL,
             ORT_VERSION,
             TRIPLET.os.archive_extension()
         ),
@@ -573,6 +588,10 @@ fn prepare_libort_dir_prebuilt() -> PathBuf {
     #[cfg(not(feature = "directml"))]
     let extract_dir = match TRIPLET.os {
         Os::Android => extract_dir,
+        Os::IOs => extract_dir
+            .join("onnxruntime.xcframework")
+            .join("ios-arm64")
+            .join("onnxruntime.framework"),
         _ => extract_dir.join(prebuilt_archive.file_stem().unwrap()),
     };
 
