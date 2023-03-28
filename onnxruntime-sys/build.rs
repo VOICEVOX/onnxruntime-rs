@@ -588,10 +588,7 @@ fn prepare_libort_dir_prebuilt() -> PathBuf {
     #[cfg(not(feature = "directml"))]
     let extract_dir = match TRIPLET.os {
         Os::Android => extract_dir,
-        Os::IOs => extract_dir
-            .join("onnxruntime.xcframework")
-            .join("ios-arm64")
-            .join("onnxruntime.framework"),
+        Os::IOs => extract_dir,
         _ => extract_dir.join(prebuilt_archive.file_stem().unwrap()),
     };
 
