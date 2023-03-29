@@ -700,7 +700,7 @@ fn prepare_libort_dir_compiled() -> PathBuf {
     let status = Command::new(copy_script)
         .args([
             "-r",
-            build_dir.to_str().unwrap(),
+            out_dir.to_str().unwrap(),
             "-a",
             &artifact_name,
             "-l",
@@ -718,5 +718,5 @@ fn prepare_libort_dir_compiled() -> PathBuf {
         panic!("Failed to copy onnxruntime: {:?}", status.code());
     }
 
-    build_dir.join(artifact_name)
+    out_dir.join(artifact_name)
 }
