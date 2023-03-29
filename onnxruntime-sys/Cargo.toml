@@ -20,6 +20,7 @@ keywords = ["neuralnetworks", "onnx", "bindings"]
 once_cell = "1.13.0"
 bindgen = { version = "0.60.1", optional = true }
 ureq = "2.1"
+git2 = "0.16.1"
 
 # Used on Windows
 zip = "0.6.2"
