@@ -667,6 +667,7 @@ fn prepare_libort_dir_compiled() -> PathBuf {
             "--build_dir",
             build_dir.to_str().unwrap(),
             "--skip_tests",
+            "--parallel",
             "--build_shared_lib",
             "--use_xcode",
             "--ios",
