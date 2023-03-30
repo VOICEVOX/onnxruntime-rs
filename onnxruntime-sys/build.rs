@@ -601,7 +601,7 @@ fn prepare_libort_dir() -> PathBuf {
             .unwrap_or_else(|_| "unknown")
     );
     match strategy.as_ref().map(String::as_str) {
-        Ok("download") => prepare_libort_dir_prebuilt(),
+        Ok("download") | Err(_) => prepare_libort_dir_prebuilt(),
         Ok("system") => PathBuf::from(match env::var(ORT_ENV_SYSTEM_LIB_LOCATION) {
             Ok(p) => p,
             Err(e) => {
@@ -611,7 +611,7 @@ fn prepare_libort_dir() -> PathBuf {
                 );
             }
         }),
-        Ok("compile") | Err(_) => prepare_libort_dir_compiled(),
+        Ok("compile") => prepare_libort_dir_compiled(),
         _ => panic!("Unknown value for {:?}", ORT_ENV_STRATEGY),
     }
 }
@@ -700,7 +700,7 @@ fn prepare_libort_dir_compiled() -> PathBuf {
     let status = Command::new(copy_script)
         .args([
             "-r",
-            out_dir.to_str().unwrap(),
+            build_dir.to_str().unwrap(),
             "-a",
             &artifact_name,
             "-l",
@@ -717,6 +717,9 @@ fn prepare_libort_dir_compiled() -> PathBuf {
     if !status.success() {
         panic!("Failed to copy onnxruntime: {:?}", status.code());
     }
+
+    // move artifact directory
+    fs::rename(build_dir.join(&artifact_name), out_dir.join(&artifact_name)).unwrap();
 
     out_dir.join(artifact_name)
 }
