@@ -626,7 +626,7 @@ fn prepare_libort_dir_compiled() -> PathBuf {
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let onnxruntime_dir = out_dir.join("onnxruntime");
     let build_dir = onnxruntime_dir.join("build");
-
+    let extract_dir = out_dir.join(format!("{}_{}_cpu", ORT_PREBUILT_EXTRACT_DIR, ORT_VERSION));
     // Clone microsoft/onnxruntime
     let repo = match Repository::clone(ORT_REPOSITORY_URL, &onnxruntime_dir) {
         Ok(repo) => repo,
@@ -641,12 +641,6 @@ fn prepare_libort_dir_compiled() -> PathBuf {
     repo.set_head(reference.name().unwrap()).unwrap();
     repo.checkout_head(Some(&mut CheckoutBuilder::new().force()))
         .unwrap();
-
-    let commit = match reference.peel_to_commit() {
-        Ok(commit) => commit,
-        Err(e) => panic!("Failed to peel HEAD: {}", e),
-    };
-    let commit_id = commit.id();
 
     // build onnxruntime
     let build_script = onnxruntime_dir.join("build.sh");
@@ -684,6 +678,13 @@ fn prepare_libort_dir_compiled() -> PathBuf {
         panic!("Failed to build onnxruntime: {:?}", status.code());
     }
 
+    // get commit id for copy files
+    let commit = match reference.peel_to_commit() {
+        Ok(commit) => commit,
+        Err(e) => panic!("Failed to peel HEAD: {}", e),
+    };
+    let commit_id = commit.id();
+
     // copy files
     let copy_script = onnxruntime_dir
         .join("tools")
@@ -691,13 +692,13 @@ fn prepare_libort_dir_compiled() -> PathBuf {
         .join("github")
         .join("linux")
         .join("copy_strip_binary.sh");
-
     let os = if env::var("TARGET").unwrap().contains("sim") {
         "ios-sim"
     } else {
         "ios"
     };
     let artifact_name = format!("onnxruntime-{}-{}", os, arch);
+
     let status = Command::new(copy_script)
         .args([
             "-r",
@@ -720,7 +721,12 @@ fn prepare_libort_dir_compiled() -> PathBuf {
     }
 
     // move artifact directory
-    fs::rename(build_dir.join(&artifact_name), out_dir.join(&artifact_name)).unwrap();
+    fs::create_dir_all(&extract_dir).unwrap();
+    fs::rename(
+        build_dir.join(&artifact_name),
+        extract_dir.join(&artifact_name),
+    )
+    .unwrap();
 
-    out_dir.join(artifact_name)
+    extract_dir.join(artifact_name)
 }
