@@ -621,18 +621,18 @@ fn prepare_libort_dir_prebuilt() -> PathBuf {
         _ => extract_dir.join(prebuilt_archive.file_stem().unwrap()),
     };
 
-    let extract_dir = if matches!(TRIPLET.os, Os::IOs) {
-        match TRIPLET.arch {
-            Architecture::Arm64 => extract_dir.join("ios-arm64"),
-            Architecture::X86_64 => extract_dir.join("ios-arm64_x86_64-simulator"),
-            _ => extract_dir,
+    // if env::var("TARGET").unwrap().contains("sim")
+
+    if matches!(TRIPLET.os, Os::IOs) {
+        if env::var("TARGET").unwrap().contains("sim") {
+            extract_dir.join("ios-arm64_x86_64-simulator")
+        } else {
+            extract_dir.join("ios-arm64")
         }
         .join("onnxruntime.framework")
     } else {
         extract_dir
-    };
-
-    extract_dir
+    }
 }
 
 fn prepare_libort_dir() -> PathBuf {
