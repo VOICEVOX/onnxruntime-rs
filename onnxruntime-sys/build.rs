@@ -24,9 +24,6 @@ const ORT_RELEASE_BASE_URL: &str = "https://github.com/microsoft/onnxruntime/rel
 const ORT_MAVEN_RELEASE_BASE_URL: &str =
     "https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android";
 
-/// Base Url from which to download pre-build releases for ios/
-const ORT_COCOAPODS_RELEASE_BASE_URL: &str = "https://onnxruntimepackages.z14.web.core.windows.net";
-
 /// onnxruntime repository/
 const ORT_REPOSITORY_URL: &str = "https://github.com/microsoft/onnxruntime.git";
 
@@ -559,12 +556,6 @@ fn prebuilt_archive_url() -> (PathBuf, String) {
             ORT_VERSION,
             TRIPLET.os.archive_extension()
         ),
-        Os::IOs => format!(
-            "{}/pod-archive-onnxruntime-c-{}.{}",
-            ORT_COCOAPODS_RELEASE_BASE_URL,
-            ORT_VERSION,
-            TRIPLET.os.archive_extension()
-        ),
         _ => format!(
             "{}/v{}/{}",
             ORT_RELEASE_BASE_URL, ORT_VERSION, prebuilt_archive
@@ -620,8 +611,6 @@ fn prepare_libort_dir_prebuilt() -> PathBuf {
         Os::IOs => extract_dir.join("onnxruntime.xcframework"),
         _ => extract_dir.join(prebuilt_archive.file_stem().unwrap()),
     };
-
-    // if env::var("TARGET").unwrap().contains("sim")
 
     if matches!(TRIPLET.os, Os::IOs) {
         if env::var("TARGET").unwrap().contains("sim") {
