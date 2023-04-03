@@ -85,10 +85,6 @@ fn main() {
                 .join(&*TRIPLET.arch.as_onnx_android_str());
             (include_dir, runtimes_dir)
         }
-        Os::IOs => (
-            libort_install_dir.join("Headers"),
-            libort_install_dir.join("onnxruntime"),
-        ),
         _ => (
             libort_install_dir.join("include"),
             libort_install_dir.join("lib"),
@@ -119,22 +115,14 @@ fn main() {
     };
     if let Ok(ort_lib_out_dir) = env::var(ORT_ENV_OUT_DIR) {
         output_onnxruntime_library(&lib_dir, &ort_lib_out_dir);
-        if matches!(TRIPLET.os, Os::IOs) {
-            let file_name = lib_dir.file_name().unwrap().to_str().unwrap();
-            println!(
-                "cargo:rerun-if-changed={}",
-                Path::new(&ort_lib_out_dir).join(file_name).display()
-            );
-        } else {
-            for entry in lib_dir.read_dir().unwrap().flat_map(|e| e.ok()) {
-                let path = entry.path();
-                if path.is_file() {
-                    let file_name = path.file_name().unwrap().to_str().unwrap();
-                    println!(
-                        "cargo:rerun-if-changed={}",
-                        Path::new(&ort_lib_out_dir).join(file_name).display()
-                    );
-                }
+        for entry in lib_dir.read_dir().unwrap().flat_map(|e| e.ok()) {
+            let path = entry.path();
+            if path.is_file() {
+                let file_name = path.file_name().unwrap().to_str().unwrap();
+                println!(
+                    "cargo:rerun-if-changed={}",
+                    Path::new(&ort_lib_out_dir).join(file_name).display()
+                );
             }
         }
     }
@@ -159,24 +147,14 @@ fn output_onnxruntime_library(ort_lib_dir: impl AsRef<Path>, ort_lib_out_dir: im
     let ort_lib_out_dir = ort_lib_out_dir.as_ref();
     fs::create_dir_all(ort_lib_out_dir).unwrap();
 
-    if matches!(TRIPLET.os, Os::IOs) {
-        let hoge = ort_lib_out_dir.join(ort_lib_dir.file_name().unwrap().to_str().unwrap());
-        print!("{}", hoge.display());
-        fs::copy(
-            ort_lib_dir,
-            ort_lib_out_dir.join(ort_lib_dir.file_name().unwrap().to_str().unwrap()),
-        )
-        .unwrap();
-    } else {
-        for entry in ort_lib_dir.read_dir().unwrap().filter_map(|e| e.ok()) {
-            let path = entry.path();
-            if path.is_file() {
-                fs::copy(
-                    &path,
-                    ort_lib_out_dir.join(path.file_name().unwrap().to_str().unwrap()),
-                )
-                .unwrap();
-            }
+    for entry in ort_lib_dir.read_dir().unwrap().filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.is_file() {
+            fs::copy(
+                &path,
+                ort_lib_out_dir.join(path.file_name().unwrap().to_str().unwrap()),
+            )
+            .unwrap();
         }
     }
 }
@@ -504,8 +482,7 @@ impl OnnxPrebuiltArchive for Triplet {
                 self.os.as_onnx_str(),
                 self.arch.as_onnx_str()
             )),
-            (Os::MacOs, Architecture::Arm64, Accelerator::None)
-            | (Os::IOs, Architecture::Arm64, Accelerator::None) => {
+            (Os::MacOs, Architecture::Arm64, Accelerator::None) => {
                 Cow::from(format!("{}-{}", self.os.as_onnx_str(), "arm64"))
             }
             // onnxruntime-win-gpu-x64-1.8.1.zip
@@ -608,20 +585,10 @@ fn prepare_libort_dir_prebuilt() -> PathBuf {
     #[cfg(not(feature = "directml"))]
     let extract_dir = match TRIPLET.os {
         Os::Android => extract_dir,
-        Os::IOs => extract_dir.join("onnxruntime.xcframework"),
         _ => extract_dir.join(prebuilt_archive.file_stem().unwrap()),
     };
 
-    if matches!(TRIPLET.os, Os::IOs) {
-        if env::var("TARGET").unwrap().contains("sim") {
-            extract_dir.join("ios-arm64_x86_64-simulator")
-        } else {
-            extract_dir.join("ios-arm64")
-        }
-        .join("onnxruntime.framework")
-    } else {
-        extract_dir
-    }
+    extract_dir
 }
 
 fn prepare_libort_dir() -> PathBuf {
@@ -656,6 +623,8 @@ fn prepare_libort_dir_compiled() -> PathBuf {
         panic!("Compile strategy is only support iOS currently");
     }
 
+    let is_simulator = env::var("TARGET").unwrap().ends_with("sim")
+        || env::var("TARGET").unwrap().starts_with("x86_64");
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let onnxruntime_dir = out_dir.join("onnxruntime");
     let build_dir = onnxruntime_dir.join("build");
@@ -677,7 +646,7 @@ fn prepare_libort_dir_compiled() -> PathBuf {
 
     // build onnxruntime
     let build_script = onnxruntime_dir.join("build.sh");
-    let ios_sysroot = if env::var("TARGET").unwrap().contains("sim") {
+    let ios_sysroot = if is_simulator {
         "iphonesimulator"
     } else {
         "iphoneos"
@@ -725,11 +694,7 @@ fn prepare_libort_dir_compiled() -> PathBuf {
         .join("github")
         .join("linux")
         .join("copy_strip_binary.sh");
-    let os = if env::var("TARGET").unwrap().contains("sim") {
-        "ios-sim"
-    } else {
-        "ios"
-    };
+    let os = if is_simulator { "ios-sim" } else { "ios" };
     let artifact_name = format!("onnxruntime-{}-{}", os, arch);
 
     let status = Command::new(copy_script)
@@ -750,7 +715,7 @@ fn prepare_libort_dir_compiled() -> PathBuf {
         .status()
         .expect("Failed to execute copy process");
     if !status.success() {
-        panic!("Failed to copy onnxruntime: {:?}", status.code());
+        panic!("Failed to copy onnxruntime: {:?}", status.code().unwrap());
     }
 
     // move artifact directory
