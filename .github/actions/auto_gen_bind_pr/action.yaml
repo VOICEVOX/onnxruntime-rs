@@ -33,10 +33,6 @@ runs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Set env for iOS build
-      if: inputs.triple == 'aarch64-apple-ios' || inputs.triple == 'aarch64-apple-ios-sim' || inputs.triple == 'x86_64-apple-ios'
-      shell: bash
-      run: echo "ORT_STRATEGY=compile" >> "$GITHUB_ENV"
     - name: install triple
       run: rustup target add ${{ inputs.triple }}
       shell: bash

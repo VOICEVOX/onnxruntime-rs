@@ -24,6 +24,10 @@ const ORT_RELEASE_BASE_URL: &str = "https://github.com/microsoft/onnxruntime/rel
 const ORT_MAVEN_RELEASE_BASE_URL: &str =
     "https://repo1.maven.org/maven2/com/microsoft/onnxruntime/onnxruntime-android";
 
+/// Base Url from which to download ios pre-build releases/
+const ORT_IOS_RELEASE_BASE_URL: &str =
+    "https://github.com/VOICEVOX/onnxruntime-builder/releases/download";
+
 /// onnxruntime repository/
 const ORT_REPOSITORY_URL: &str = "https://github.com/microsoft/onnxruntime.git";
 
@@ -400,7 +404,7 @@ impl Os {
             Os::Linux => "tgz",
             Os::MacOs => "tgz",
             Os::Android => "aar",
-            Os::IOs => "zip",
+            Os::IOs => "tgz",
         }
     }
 }
@@ -501,6 +505,21 @@ impl OnnxPrebuiltArchive for Triplet {
                 "x64",
                 self.accelerator.as_onnx_str(),
             )),
+            // onnxruntime-ios-arm64-cpu-v1.8.1.tgz
+            (Os::IOs, Architecture::Arm64, Accelerator::None)
+            | (Os::IOs, Architecture::X86_64, Accelerator::None) => {
+                let arch = if env::var("CARGO_BUILD_TARGET").unwrap().ends_with("sim") {
+                    format!("{}-sim", self.os.as_onnx_str())
+                } else {
+                    format!("{}", self.os.as_onnx_str())
+                };
+                Cow::from(format!(
+                    "{}-{}-cpu-v{}",
+                    self.os.as_onnx_str(),
+                    arch,
+                    ORT_VERSION,
+                ))
+            }
             _ => {
                 panic!(
                     "Unsupported prebuilt triplet: {:?}, {:?}, {:?}. Please use {}=system and {}=/path/to/onnxruntime",
@@ -532,6 +551,10 @@ fn prebuilt_archive_url() -> (PathBuf, String) {
             ORT_VERSION,
             ORT_VERSION,
             TRIPLET.os.archive_extension()
+        ),
+        Os::IOs | Os::IOsSimulator => format!(
+            "{}/v{}/{}",
+            ORT_IOS_RELEASE_BASE_URL, ORT_VERSION, prebuilt_archive
         ),
         _ => format!(
             "{}/v{}/{}",
@@ -611,120 +634,7 @@ fn prepare_libort_dir() -> PathBuf {
                 );
             }
         }),
-        Ok("compile") => prepare_libort_dir_compiled(),
+        Ok("compile") => unimplemented!(),
         _ => panic!("Unknown value for {:?}", ORT_ENV_STRATEGY),
     }
-}
-
-fn prepare_libort_dir_compiled() -> PathBuf {
-    // Compile is only support iOS currently.
-
-    if !matches!(TRIPLET.os, Os::IOs) {
-        panic!("Compile strategy is only support iOS currently");
-    }
-
-    let is_simulator = env::var("TARGET").unwrap().ends_with("sim")
-        || env::var("TARGET").unwrap().starts_with("x86_64");
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let onnxruntime_dir = out_dir.join("onnxruntime");
-    let build_dir = onnxruntime_dir.join("build");
-    let extract_dir = out_dir.join(format!("{}_{}_cpu", ORT_PREBUILT_EXTRACT_DIR, ORT_VERSION));
-    // Clone microsoft/onnxruntime
-    let repo = match Repository::clone(ORT_REPOSITORY_URL, &onnxruntime_dir) {
-        Ok(repo) => repo,
-        Err(e) => panic!("Failed to clone onnxruntime: {}", e),
-    };
-    // checkout commit annotated by tag
-    let reference = format!("refs/tags/v{}", ORT_VERSION);
-    let reference = match repo.find_reference(&reference) {
-        Ok(reference) => reference,
-        Err(e) => panic!("Failed to find tag v{}: {}", ORT_VERSION, e),
-    };
-    repo.set_head(reference.name().unwrap()).unwrap();
-    repo.checkout_head(Some(&mut CheckoutBuilder::new().force()))
-        .unwrap();
-
-    // build onnxruntime
-    let build_script = onnxruntime_dir.join("build.sh");
-    let ios_sysroot = if is_simulator {
-        "iphonesimulator"
-    } else {
-        "iphoneos"
-    };
-    let arch = if matches!(TRIPLET.arch, Architecture::Arm64) {
-        "arm64"
-    } else {
-        "x86_64"
-    };
-    let status = Command::new(build_script)
-        .args([
-            "--config",
-            "Release",
-            "--build_dir",
-            build_dir.to_str().unwrap(),
-            "--skip_tests",
-            "--parallel",
-            "--build_shared_lib",
-            "--use_xcode",
-            "--ios",
-            "--ios_sysroot",
-            ios_sysroot,
-            "--osx_arch",
-            arch,
-            "--apple_deploy_target",
-            IOS_MINIMAL_DEPLOY_TARGET,
-        ])
-        .status()
-        .expect("Failed to execute onnxruntime build process");
-    if !status.success() {
-        panic!("Failed to build onnxruntime: {:?}", status.code());
-    }
-
-    // get commit id for copy files
-    let commit = match reference.peel_to_commit() {
-        Ok(commit) => commit,
-        Err(e) => panic!("Failed to peel HEAD: {}", e),
-    };
-    let commit_id = commit.id();
-
-    // copy files
-    let copy_script = onnxruntime_dir
-        .join("tools")
-        .join("ci_build")
-        .join("github")
-        .join("linux")
-        .join("copy_strip_binary.sh");
-    let os = if is_simulator { "ios-sim" } else { "ios" };
-    let artifact_name = format!("onnxruntime-{}-{}", os, arch);
-
-    let status = Command::new(copy_script)
-        .args([
-            "-r",
-            build_dir.to_str().unwrap(),
-            "-a",
-            &artifact_name,
-            "-l",
-            (format!("libonnxruntime.{}.dylib", ORT_VERSION).as_str()),
-            "-c",
-            (format!("Release/Release-{}", ios_sysroot).as_str()),
-            "-s",
-            onnxruntime_dir.to_str().unwrap(),
-            "-t",
-            &commit_id.to_string(),
-        ])
-        .status()
-        .expect("Failed to execute copy process");
-    if !status.success() {
-        panic!("Failed to copy onnxruntime: {:?}", status.code().unwrap());
-    }
-
-    // move artifact directory
-    fs::create_dir_all(&extract_dir).unwrap();
-    fs::rename(
-        build_dir.join(&artifact_name),
-        extract_dir.join(&artifact_name),
-    )
-    .unwrap();
-
-    extract_dir.join(artifact_name)
 }
