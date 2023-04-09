@@ -552,7 +552,7 @@ fn prebuilt_archive_url() -> (PathBuf, String) {
             ORT_VERSION,
             TRIPLET.os.archive_extension()
         ),
-        Os::IOs | Os::IOsSimulator => format!(
+        Os::IOs => format!(
             "{}/v{}/{}",
             ORT_IOS_RELEASE_BASE_URL, ORT_VERSION, prebuilt_archive
         ),
