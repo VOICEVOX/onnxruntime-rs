@@ -1,12 +1,10 @@
 #![allow(dead_code)]
 
-use git2::{build::CheckoutBuilder, Repository};
 use std::{
     borrow::Cow,
     env, fs,
     io::{self, Read, Write},
     path::{Path, PathBuf},
-    process::Command,
     str::FromStr,
 };
 
