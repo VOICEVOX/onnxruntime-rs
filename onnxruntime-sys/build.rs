@@ -13,7 +13,7 @@ use std::{
 /// WARNING: If version is changed, bindings for all platforms will have to be re-generated.
 ///          To do so, run this:
 ///              cargo build --package onnxruntime-sys --features generate-bindings
-const ORT_VERSION: &str = "1.14.1.2";
+const ORT_VERSION: &str = "1.13.1";
 
 /// Base Url from which to download pre-built releases/
 const ORT_RELEASE_BASE_URL: &str = "https://github.com/microsoft/onnxruntime/releases/download";
@@ -24,7 +24,7 @@ const ORT_MAVEN_RELEASE_BASE_URL: &str =
 
 /// Base Url from which to download ios pre-build releases/
 const ORT_IOS_RELEASE_BASE_URL: &str =
-    "https://github.com/HyodaKazuaki/onnxruntime-builder/releases/download";
+    "https://github.com/VOICEVOX/onnxruntime-builder/releases/download";
 
 /// onnxruntime repository/
 const ORT_REPOSITORY_URL: &str = "https://github.com/microsoft/onnxruntime.git";
@@ -64,7 +64,9 @@ static TRIPLET: once_cell::sync::Lazy<Triplet> = once_cell::sync::Lazy::new(|| T
 });
 
 static ONNXRUNTIME_DIR_NAME: once_cell::sync::Lazy<String> =
-    once_cell::sync::Lazy::new(|| format!("onnxruntime-{}-{}", TRIPLET.as_onnx_str(), "1.14.1",));
+    once_cell::sync::Lazy::new(
+        || format!("onnxruntime-{}-{}", TRIPLET.as_onnx_str(), ORT_VERSION,),
+    );
 
 #[cfg(feature = "disable-sys-build-script")]
 fn main() {
