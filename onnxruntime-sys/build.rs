@@ -13,7 +13,7 @@ use std::{
 /// WARNING: If version is changed, bindings for all platforms will have to be re-generated.
 ///          To do so, run this:
 ///              cargo build --package onnxruntime-sys --features generate-bindings
-const ORT_VERSION: &str = "1.13.1";
+const ORT_VERSION: &str = "1.14.1.2";
 
 /// Base Url from which to download pre-built releases/
 const ORT_RELEASE_BASE_URL: &str = "https://github.com/microsoft/onnxruntime/releases/download";
@@ -24,7 +24,7 @@ const ORT_MAVEN_RELEASE_BASE_URL: &str =
 
 /// Base Url from which to download ios pre-build releases/
 const ORT_IOS_RELEASE_BASE_URL: &str =
-    "https://github.com/VOICEVOX/onnxruntime-builder/releases/download";
+    "https://github.com/HyodaKazuaki/onnxruntime-builder/releases/download";
 
 /// onnxruntime repository/
 const ORT_REPOSITORY_URL: &str = "https://github.com/microsoft/onnxruntime.git";
@@ -64,9 +64,7 @@ static TRIPLET: once_cell::sync::Lazy<Triplet> = once_cell::sync::Lazy::new(|| T
 });
 
 static ONNXRUNTIME_DIR_NAME: once_cell::sync::Lazy<String> =
-    once_cell::sync::Lazy::new(
-        || format!("onnxruntime-{}-{}", TRIPLET.as_onnx_str(), ORT_VERSION,),
-    );
+    once_cell::sync::Lazy::new(|| format!("onnxruntime-{}-{}", TRIPLET.as_onnx_str(), "1.14.1",));
 
 #[cfg(feature = "disable-sys-build-script")]
 fn main() {
@@ -503,21 +501,21 @@ impl OnnxPrebuiltArchive for Triplet {
                 "x64",
                 self.accelerator.as_onnx_str(),
             )),
-            // onnxruntime-ios-arm64-cpu-v1.8.1.tgz
-            (Os::IOs, Architecture::Arm64, Accelerator::None)
-            | (Os::IOs, Architecture::X86_64, Accelerator::None) => {
-                let arch = if env::var("CARGO_BUILD_TARGET").unwrap().ends_with("sim") {
+            // onnxruntime-ios-arm64-1.8.1.tgz
+            (Os::IOs, Architecture::Arm64, Accelerator::None) => {
+                let os = if env::var("TARGET").unwrap().ends_with("sim") {
                     format!("{}-sim", self.os.as_onnx_str())
                 } else {
                     format!("{}", self.os.as_onnx_str())
                 };
-                Cow::from(format!(
-                    "{}-{}-cpu-v{}",
-                    self.os.as_onnx_str(),
-                    arch,
-                    ORT_VERSION,
-                ))
+                Cow::from(format!("{}-{}", os, "arm64"))
             }
+            // onnxruntime-ios-sim-x86_64-1.8.1.tgz
+            (Os::IOs, Architecture::X86_64, Accelerator::None) => Cow::from(format!(
+                "{}-sim-{}",
+                self.os.as_onnx_str(),
+                self.arch.as_onnx_str()
+            )),
             _ => {
                 panic!(
                     "Unsupported prebuilt triplet: {:?}, {:?}, {:?}. Please use {}=system and {}=/path/to/onnxruntime",
