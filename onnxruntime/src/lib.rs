@@ -590,6 +590,8 @@ pub struct CudaProviderOptions<'a> {
     pub user_compute_stream: Option<*mut c_void>,
     /// default_memory_arena_cfg
     pub default_memory_arena_cfg: Option<&'a mut ArenaCfg>,
+    /// tunable_op_enabled
+    pub tunable_op_enabled: i32,
 }
 
 impl<'a> From<CudaProviderOptions<'a>> for sys::OrtCUDAProviderOptions {
@@ -613,6 +615,7 @@ impl<'a> From<CudaProviderOptions<'a>> for sys::OrtCUDAProviderOptions {
             } else {
                 null_mut()
             },
+            tunable_op_enabled: options.tunable_op_enabled,
         }
     }
 }
