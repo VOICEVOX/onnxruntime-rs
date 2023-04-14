@@ -29,9 +29,6 @@ const ORT_IOS_RELEASE_BASE_URL: &str =
 /// onnxruntime repository/
 const ORT_REPOSITORY_URL: &str = "https://github.com/microsoft/onnxruntime.git";
 
-/// Minimum iOS version of the target platform/
-const IOS_MINIMAL_DEPLOY_TARGET: &str = "16.0";
-
 /// Environment variable selecting which strategy to use for finding the library
 /// Possibilities:
 /// * "download": Download a pre-built library from upstream. This is the default if `ORT_STRATEGY` is not set.
@@ -504,6 +501,7 @@ impl OnnxPrebuiltArchive for Triplet {
                 self.accelerator.as_onnx_str(),
             )),
             // onnxruntime-ios-arm64-1.8.1.tgz
+            // Note aarch64 simulator have a '-sim' in the target, but x86_64 does not; both have '-sim' for onnxruntime
             (Os::IOs, Architecture::Arm64, Accelerator::None) => {
                 let os = if env::var("TARGET").unwrap().ends_with("sim") {
                     format!("{}-sim", self.os.as_onnx_str())
