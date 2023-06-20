@@ -1,3 +1,18 @@
+# VOICEVOX ONNX Runtime
+
+onnxruntime-rsのフォークです。onnxruntimeのバージョンなどをVOICEVOX独自のものに合わせています。
+
+## onnxruntime のバージョン更新方法
+
+0. forkし、fork先のリポジトリの `Workflow permissions` で書き込み権限やプルリクエスト作成権限を付与しておく
+1. `onnxruntime-sys` の `build.rs` にある `ORT_VERSION` 定数のバージョンを更新
+2. GithubにpushするとCIからヘッダー更新のプルリクエストが届くので全部マージする
+3. このリポジトリにプルリクエストを出す
+
+---
+
+以下は元リポジトリの README です。
+
 # ONNX Runtime
 
 [<img alt="github" src="https://img.shields.io/badge/github-nbigaouette/onnxruntime_rs-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/nbigaouette/onnxruntime-rs)
